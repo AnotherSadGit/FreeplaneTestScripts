@@ -10,12 +10,6 @@ import org.freeplane.plugin.script.proxy.Proxy
 
 class NodeShape
 {
-    // Only needed so can compile to Java class file.
-    static void main(String[] args)
-    {
-        return
-    }
-    
     static String getShapeStyle(Proxy.Node nodeToRead)
     {
         final ModeController modeController = Controller.getCurrentModeController()
