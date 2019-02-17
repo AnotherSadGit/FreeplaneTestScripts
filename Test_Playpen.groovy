@@ -132,6 +132,7 @@ void displayFindAllOrder(Proxy.Node branchRootNode, Boolean doDepthFirst)
 		sb.append("\n")
 	}
 	
+	textUtils.copyToClipboard(displayText)
 	ui.informationMessage(sb.toString())
 }
 
@@ -242,4 +243,68 @@ void setNodeBorderWidthMatchesEdgeWidth(Proxy.Node nodeToFormat, Boolean borderW
 	styleController.setBorderWidthMatchesEdgeWidth(nodeToFormat.delegate, borderWidthMatchesEdgeWidth)
 }
 
-setNodeBorderWidthMatchesEdgeWidth(node, false)
+//setNodeBorderWidthMatchesEdgeWidth(node, false)
+
+// Needed for isFontMonoSpaced
+import java.awt.Font
+import java.awt.font.FontRenderContext
+import java.awt.geom.Rectangle2D
+import java.awt.RenderingHints
+
+// Based on Stackoverflow answer https://stackoverflow.com/a/17215863/216440 to 
+//	question https://stackoverflow.com/questions/922052/testing-whether-a-font-is-monospaced-in-java
+Boolean isFontMonoSpaced(String fontName, String defaultCodeFontName)
+{
+	// Get font at 12 point to avoid errors where character widths for non-mono-spaced fonts 
+	//	for narrow and wide characters appear the same at small point sizes.
+	// eg GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts() returns fonts at 
+	//	1 point size and about 15% of fonts will appear to be mono-spaced at that size when they 
+	//	really aren't.
+	Font specifiedFont = Font.decode(fontName + "-12")	
+	
+	// Fall back to less accurate method if can't find font.  This should never happen, see note 
+	//	below about "Dialog" font family, but let's be careful in case Java changes things.
+	if (!specifiedFont)
+	{
+		ui.informationMessage("Font with name '" + fontName + "' not found.")
+		return (fontName.toLowerCase() == defaultCodeFontName.toLowerCase())
+	}
+
+	// If font name not found on system, JavaDocs say Font.decode will return a font from the 
+	//	font family "Dialog".
+	if (specifiedFont.fontName.toLowerCase() != fontName.toLowerCase())
+	{
+		ui.informationMessage("Font with name '" + fontName + "' not found.  Font.decode returned font '" 
+			+ specifiedFont.fontName + "'.")
+		return (fontName.toLowerCase() == defaultCodeFontName.toLowerCase())
+	}
+
+	FontRenderContext frc = new FontRenderContext(null, 
+		RenderingHints.VALUE_TEXT_ANTIALIAS_DEFAULT, RenderingHints.VALUE_FRACTIONALMETRICS_DEFAULT)
+	Rectangle2D iBounds = specifiedFont.getStringBounds("i", frc)
+	Rectangle2D spaceBounds = specifiedFont.getStringBounds(" ", frc)
+	Rectangle2D mBounds = specifiedFont.getStringBounds("m", frc)
+	
+	StringBuilder sb = new StringBuilder()
+	sb.append("Comparing '" + fontName + "' font character widths:\n")
+	sb.append("i: " + iBounds.width + "\n")
+	sb.append("[space]: " + spaceBounds.width + "\n")
+	sb.append("m: " + mBounds.width + "\n")	
+	ui.informationMessage(sb.toString())
+	
+	return ((iBounds.width == mBounds.width) && (spaceBounds.width == mBounds.width))
+}
+
+void displayWhetherFontMonoSpaced(String fontName, Boolean expectedResult)
+{
+	def defaultCodeFontName = "Consolas"
+	def isMonoSpaced = isFontMonoSpaced(fontName, defaultCodeFontName)
+	ui.informationMessage("Font '" + fontName + "' is mono-spaced: " + isMonoSpaced 
+		+ ". Expected result: " + expectedResult)
+}
+
+displayWhetherFontMonoSpaced("Consolas", true)
+displayWhetherFontMonoSpaced("Lucida Console", true)
+displayWhetherFontMonoSpaced("Arial", false)
+displayWhetherFontMonoSpaced("Tahoma", false)
+displayWhetherFontMonoSpaced("Invalid", false)
